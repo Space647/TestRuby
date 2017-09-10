@@ -3,10 +3,9 @@ require 'nokogiri'
 require 'open-uri'
 require "csv"
 
-
-main_url = "https://www.petsonic.com/"
-type_product = "snacks-huesos-para-perros"
-nameFileToSave="file"
+main_url = "https://www.petsonic.com/"      #url website
+type_product = "snacks-huesos-para-perros"  #category
+fileNameToSave="file"                       #file name to save
 
 url = "#{main_url}#{type_product}/"
 num_page = 0
@@ -58,7 +57,7 @@ costs.push({
   full_info_product.push(info_product)
 end
 
-CSV.open("#{nameFileToSave}.csv", "wb") do |csv|
+CSV.open("#{fileNameToSave}.csv", "wb") do |csv|
   full_info_product.each do |value|
   csv << [value['product_name'],value['costs'],value['picture_url']]
   end
