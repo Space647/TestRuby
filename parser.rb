@@ -1,25 +1,67 @@
 require 'rubygems'
 require 'nokogiri'
 require 'open-uri'
-require 'image_downloader'
+require "csv"
 
-url = 'https://www.petsonic.com/snacks-huesos-para-perros/'
-html = open(url)
-doc = Nokogiri::HTML(html)
-node_found_by_xpath = doc.xpath('//*[@id="center_column"]/div[3]/div/div[4]/div/div[1]/div/a')
-showing= node_found_by_xpath.xpath('@href')
-title = node_found_by_xpath.xpath('@title')
-ParsingUrl=open("#{showing}")
-doc1= Nokogiri::HTML(ParsingUrl)
-ing1=doc1.xpath('//*[@id="bigpic"]')
-img1=ing1.xpath('@src')
-pars1=doc1.xpath('//*[@id="attributes"]/fieldset/div/ul[2]/li/span[1]').text
-pars2=doc1.xpath('//*[@id="attributes"]/fieldset/div/ul[2]/li/span[2]').text
-File.open('1.png', 'wb') do |fo|
-    fo.write open("#{img1}").read 
+
+main_url = "https://www.petsonic.com/"
+type_product = "snacks-huesos-para-perros"
+nameFileToSave="file"
+
+url = "#{main_url}#{type_product}/"
+num_page = 0
+
+pages_num = []
+urls_full_page_product = []
+full_info_product = []
+
+def get_page(url)
+  html = open(url)
+  doc = Nokogiri::HTML(html)
+end
+
+
+common_view = get_page(url)
+pages_list = common_view.xpath('//*[@id="pagination_bottom"]/ul')
+pages_list.each do |page|
+  page.xpath(".//a/span").each do |num|
+    pages_num.push(num.text.to_i)
   end
+end
 
-puts img1
-#puts title
-#puts pars1
-#puts pars2
+max_page = pages_num.max()
+
+1.upto(max_page) do |page|
+  url_product = "#{url}?p=#{page}"
+  common_view = get_page(url_product)
+  list_products = common_view.xpath('//*[@id="center_column"]/div[3]/div')
+  list_products.each do |url|
+    real_path = url.xpath(".//div/div[1]/div/a[@class='product_img_link']/@href").to_a
+    urls_full_page_product.concat(real_path)
+  end
+end
+
+urls_full_page_product.each do |full_url|
+  info_product = {}
+  product_page = get_page(full_url)
+  info_product['picture_url'] = product_page.xpath('//*[@id="bigpic"]/@src')
+  info_product['product_name'] = product_page.xpath('//*[@id="right"]/div/div[1]/div/h1/text()').text.strip
+  prices_list = product_page.xpath('//*[@id="attributes"]/fieldset/div')
+  costs = []
+  prices_list.each do |price|
+costs.push({
+      'type_product' => price.xpath('.//li/span[1]').text.strip,
+      'price_product' => price.xpath('.//li/span[2]').text.strip
+             })
+  end
+  info_product['costs'] = costs
+  full_info_product.push(info_product)
+end
+
+CSV.open("#{nameFileToSave}.csv", "wb") do |csv|
+  full_info_product.each do |value|
+  csv << [value['product_name'],value['costs'],value['picture_url']]
+  end
+end
+puts 'Done!'
+
